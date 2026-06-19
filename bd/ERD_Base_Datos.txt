@@ -1,0 +1,155 @@
+@startuml Kaichaini_ERD
+
+skinparam linetype ortho
+skinparam roundcorner 8
+
+skinparam entity {
+    BackgroundColor #F8F9FF
+    BorderColor #4F46E5
+    FontColor #111827
+}
+
+title Kaichaini - Modelo Relacional de Base de Datos (Sprint 1)
+
+entity USUARIO {
+    * id : UUID <<PK>>
+    --
+    * idLiga : UUID <<FK>>
+    nombre : VARCHAR
+    correo : VARCHAR
+    contrasena : VARCHAR
+    rol : VARCHAR
+    avatar : TEXT
+    colegio : VARCHAR
+    tokenJWT : TEXT
+    resetPasswordToken : VARCHAR
+    resetPasswordExpires : TIMESTAMP
+    fechaRegistro : TIMESTAMP
+}
+
+entity LIGA {
+    * id : UUID <<PK>>
+    --
+    nombre : VARCHAR
+    umbralMinimo : INTEGER
+    umbralMaximo : INTEGER
+}
+
+entity CLASE {
+    * id : UUID <<PK>>
+    --
+    * idDocente : UUID <<FK>>
+    nombre : VARCHAR
+    codigoUnico : VARCHAR
+    curso : VARCHAR
+}
+
+entity ESTUDIANTE_CLASE {
+    * id : UUID <<PK>>
+    --
+    * idEstudiante : UUID <<FK>>
+    * idClase : UUID <<FK>>
+    fechaIngreso : TIMESTAMP
+}
+
+entity SILABO {
+    * id : UUID <<PK>>
+    --
+    * idClase : UUID <<FK>>
+    archivoURL : VARCHAR
+    fechaSubida : TIMESTAMP
+    contenido : TEXT
+}
+
+entity MODULO {
+    * id : UUID <<PK>>
+    --
+    * idClase : UUID <<FK>>
+    nombre : VARCHAR
+    orden : INTEGER
+    bimestre : INTEGER
+    estado : VARCHAR
+}
+
+entity EJERCICIO {
+    * id : UUID <<PK>>
+    --
+    * idModulo : UUID <<FK>>
+    tipo : VARCHAR
+    enunciado : TEXT
+    respuestaCorrecta : TEXT
+    opciones : TEXT
+}
+
+entity RESPUESTA {
+    * id : UUID <<PK>>
+    --
+    * idEstudiante : UUID <<FK>>
+    * idEjercicio : UUID <<FK>>
+    respuesta : TEXT
+    esCorrecta : BOOLEAN
+    fecha : TIMESTAMP
+}
+
+entity XP {
+    * id : UUID <<PK>>
+    --
+    * idEstudiante : UUID <<FK>>
+    puntosTotal : INTEGER
+}
+
+entity INSIGNIA {
+    * id : UUID <<PK>>
+    --
+    nombre : VARCHAR
+    descripcion : TEXT
+    criterio : VARCHAR
+    imagenURL : VARCHAR
+}
+
+entity ESTUDIANTE_INSIGNIA {
+    * idEstudiante : UUID <<PK, FK>>
+    * idInsignia : UUID <<PK, FK>>
+    --
+    fechaDesbloqueo : TIMESTAMP
+}
+
+entity MATERIAL {
+    * id : UUID <<PK>>
+    --
+    * idClase : UUID <<FK>>
+    * idModulo : UUID <<FK>>
+    nombre : VARCHAR
+    archivoURL : VARCHAR
+    tipo : VARCHAR
+}
+
+' =========================
+' RELACIONES
+' =========================
+
+LIGA ||--o{ USUARIO : posee
+
+USUARIO ||--o{ CLASE : gestiona
+
+USUARIO ||--o{ ESTUDIANTE_CLASE : pertenece
+CLASE ||--o{ ESTUDIANTE_CLASE : contiene
+
+CLASE ||--|| SILABO : tiene
+
+CLASE ||--o{ MODULO : contiene
+
+CLASE ||--o{ MATERIAL : posee
+MODULO ||--o{ MATERIAL : utiliza
+
+MODULO ||--o{ EJERCICIO : incluye
+
+EJERCICIO ||--o{ RESPUESTA : recibe
+USUARIO ||--o{ RESPUESTA : responde
+
+USUARIO ||--|| XP : acumula
+
+USUARIO ||--o{ ESTUDIANTE_INSIGNIA : obtiene
+INSIGNIA ||--o{ ESTUDIANTE_INSIGNIA : asigna
+
+@enduml

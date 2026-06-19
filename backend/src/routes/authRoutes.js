@@ -1,0 +1,14 @@
+const { Router } = require('express');
+const AuthController = require('../controllers/authController');
+
+const router = Router();
+
+router.post('/auth/register', AuthController.registrar);
+router.post('/auth/login', AuthController.iniciarSesion);
+router.put('/auth/perfil', AuthController.personalizarPerfil);
+router.post('/auth/cambiar-contrasena', AuthController.cambiarContrasena);
+router.post('/auth/forgot-password', AuthController.olvideContrasena);
+router.post('/auth/reset-password', AuthController.restablecerContrasena);
+router.post('/auth/logout', AuthController.cerrarSesion);
+
+module.exports = router;

@@ -1,0 +1,60 @@
+# Dependencias
+/node_modules
+/npm-debug.log*
+/yarn-debug.log*
+/yarn-error.log*
+/pnpm-debug.log*
+lerna-debug.log*
+
+# Entorno y credenciales (¡Nunca subas tus contraseñas o APIs!)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Builds y compilaciones de React
+/build
+/dist
+
+# Archivos del sistema operativo
+.DS_Store
+Thumbs.db
+
+# Registros (Logs)
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Cobertura de pruebas (Coverage)
+/coverage
+
+# Archivos de editores e IDEs
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+
+# Dependencias instaladas por Node.js (por si usas package-lock.json alternativos)
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+
+# Expo
+.expo/
+nativewind-env.d.ts
+
+# Extras
+BACKEND_STATUS.md
+ESTRUCTURA_ESQUELETO.md
+GUIA_BACKEND.md
+IMPLEMENTATION_SUMMARY.md
+AGENTS.md
