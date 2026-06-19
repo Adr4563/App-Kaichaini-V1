@@ -73,6 +73,28 @@ class AuthController {
     }
   }
 
+  static async iniciarSesionDocente(req, res) {
+    try {
+      const { correo, contrasena } = req.body;
+
+      if (!correo || !contrasena) {
+        return res.status(400).json({ success: false, message: 'Correo y contrasena son requeridos' });
+      }
+
+      const usuario = await User.obtenerPorCorreo(correo);
+
+      if (!usuario || usuario.contrasena !== contrasena || usuario.rol !== 'Docente') {
+        return res.status(401).json({ success: false, message: 'Credenciales invalidas' });
+      }
+
+      delete usuario.contrasena;
+
+      res.status(200).json({ success: true, message: 'Login exitoso', data: { usuario: usuario } });
+    } catch (error) {
+      res.status(500).json({ success: false, message: error.message });
+    }
+  }
+
   static async personalizarPerfil(req, res) {
     try {
       const { idUsuario, nombre, avatar } = req.body;

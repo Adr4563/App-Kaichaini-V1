@@ -10,6 +10,7 @@ import { AuthProvider, useAuth } from './src/context/AuthContext';
 
 // Auth screens
 import LoginScreen            from './src/screens/auth/LoginScreen';
+import LoginDocenteScreen     from './src/screens/auth/LoginDocenteScreen';
 import ClassCodeScreen        from './src/screens/auth/ClassCodeScreen';
 import RegisterScreen         from './src/screens/auth/RegisterScreen';
 import ForgotPasswordScreen   from './src/screens/auth/ForgotPasswordScreen';
@@ -30,6 +31,7 @@ import InsigniaDesbloqueadaScreen from './src/screens/student/InsigniaDesbloquea
 import EjercicioScreen            from './src/screens/student/EjercicioScreen';            // H.U. 309, 311, 312, 207
 import EvaluacionModuloScreen     from './src/screens/student/EvaluacionModuloScreen';     // H.U. 314
 import ConfigurarFeedbackScreen   from './src/screens/docente/ConfigurarFeedbackScreen';   // H.U. 207 (docente)
+import MisClasesDocenteScreen     from './src/screens/docente/MisClasesDocenteScreen';     // H.U. 317 (docente)
 
 const Stack = createNativeStackNavigator();
 const Tab   = createBottomTabNavigator();
@@ -39,9 +41,20 @@ function AuthStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="Login"          component={LoginScreen} />
+      <Stack.Screen name="LoginDocente"   component={LoginDocenteScreen} />
       <Stack.Screen name="ClassCode"      component={ClassCodeScreen} />
       <Stack.Screen name="Register"       component={RegisterScreen} />
       <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+    </Stack.Navigator>
+  );
+}
+
+// ── Stack del docente (H.U. 013, 317, ...) ─────────────────────────────────────
+function DocenteStack() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="MisClasesDocente"   component={MisClasesDocenteScreen} />
+      <Stack.Screen name="ConfigurarFeedback" component={ConfigurarFeedbackScreen} />
     </Stack.Navigator>
   );
 }
@@ -108,7 +121,6 @@ function AppStack() {
       <Stack.Screen name="InsigniaDesbloqueada" component={InsigniaDesbloqueadaScreen} />
       <Stack.Screen name="Ejercicio"            component={EjercicioScreen} />
       <Stack.Screen name="EvaluacionModulo"     component={EvaluacionModuloScreen} />
-      <Stack.Screen name="ConfigurarFeedback"   component={ConfigurarFeedbackScreen} />
     </Stack.Navigator>
   );
 }
@@ -135,9 +147,13 @@ function RootNavigator() {
     );
   }
 
-  return usuario
-    ? <ActivityWrapper><AppStack /></ActivityWrapper>
-    : <AuthStack />;
+  if (!usuario) return <AuthStack />;
+
+  if (usuario.rol === 'Docente') {
+    return <ActivityWrapper><DocenteStack /></ActivityWrapper>;
+  }
+
+  return <ActivityWrapper><AppStack /></ActivityWrapper>;
 }
 
 export default function App() {

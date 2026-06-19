@@ -1,3 +1,6 @@
+// LoginDocenteScreen.js
+// H.U. 013 - Inicio de sesion del docente
+
 import React, { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity,
@@ -8,8 +11,8 @@ import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
 import { s, C } from '../../styles/screens/LoginScreen.styles';
 
-export default function LoginScreen({ navigation }) {
-  const { login, expiredMessage, setExpiredMessage } = useAuth();
+export default function LoginDocenteScreen({ navigation }) {
+  const { login } = useAuth();
   const [correo,          setCorreo]          = useState('');
   const [contrasena,      setContrasena]      = useState('');
   const [cargando,        setCargando]        = useState(false);
@@ -26,10 +29,12 @@ export default function LoginScreen({ navigation }) {
     setCargando(true);
     setError('');
     try {
-      const { data } = await api.post('/auth/login', { correo: correo.trim(), contrasena });
+      const { data } = await api.post('/auth/login-docente', { correo: correo.trim(), contrasena });
       await login(data.data);
+      // El cambio de "usuario" en el contexto hace que RootNavigator
+      // muestre automaticamente el stack de docente (ver App.js).
     } catch (e) {
-      const msg = e.response?.data?.error?.message || e.response?.data?.message || 'Error al iniciar sesión';
+      const msg = e.response?.data?.error?.message || e.response?.data?.message || 'Credenciales inválidas';
       setError(msg);
     } finally {
       setCargando(false);
@@ -44,8 +49,8 @@ export default function LoginScreen({ navigation }) {
           <Text style={s.logoText}>K</Text>
         </View>
 
-        <Text style={s.title}>Hola de nuevo</Text>
-        <Text style={s.subtitle}>Ingresa para seguir aprendiendo</Text>
+        <Text style={s.title}>Acceso docente</Text>
+        <Text style={s.subtitle}>Ingresa con tu cuenta de docente</Text>
 
         <View style={s.formGroup}>
           <Text style={s.label}>Correo</Text>
@@ -82,16 +87,6 @@ export default function LoginScreen({ navigation }) {
           </View>
         </View>
 
-        <TouchableOpacity style={s.forgotRow} onPress={() => navigation.navigate('ForgotPassword')}>
-          <Text style={s.forgotText}>¿Olvidaste tu contraseña?</Text>
-        </TouchableOpacity>
-
-        {expiredMessage ? (
-          <View style={s.expiredBox}>
-            <Text style={s.expiredText}>{expiredMessage}</Text>
-          </View>
-        ) : null}
-
         {error ? <Text style={s.errorText}>{error}</Text> : null}
 
         <TouchableOpacity
@@ -106,17 +101,10 @@ export default function LoginScreen({ navigation }) {
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={s.btnSecondary}
-          onPress={() => navigation.navigate('ClassCode')}
-        >
-          <Text style={s.btnSecondaryText}>Crear cuenta con código</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
           style={s.forgotRow}
-          onPress={() => navigation.navigate('LoginDocente')}
+          onPress={() => navigation.navigate('Login')}
         >
-          <Text style={s.forgotText}>¿Eres docente? Inicia sesión aquí</Text>
+          <Text style={s.forgotText}>¿Eres estudiante? Inicia sesión aquí</Text>
         </TouchableOpacity>
 
       </ScrollView>
