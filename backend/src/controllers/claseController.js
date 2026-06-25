@@ -70,6 +70,7 @@ class ClaseController {
     }
   }
 
+  // H.U. 317 - Visualizacion de clases del docente
   static async listarPorDocente(req, res) {
     try {
       const { idUsuario, rol } = req.query;
