@@ -19,6 +19,7 @@ class Clase {
     return rows[0] || null;
   }
 
+  // H.U. 317 - Visualizacion de clases del docente
   static async listarPorDocente(idDocente) {
     const { rows } = await pool.query(
       `SELECT c.id, c.nombre, c."codigoUnico", c.curso, c."idDocente",

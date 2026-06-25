@@ -32,6 +32,7 @@ import EjercicioScreen            from './src/screens/student/EjercicioScreen'; 
 import EvaluacionModuloScreen     from './src/screens/student/EvaluacionModuloScreen';     // H.U. 314
 import ConfigurarFeedbackScreen   from './src/screens/docente/ConfigurarFeedbackScreen';   // H.U. 207 (docente)
 import MisClasesDocenteScreen     from './src/screens/docente/MisClasesDocenteScreen';     // H.U. 317 (docente)
+import ModulosClaseDocenteScreen  from './src/screens/docente/ModulosClaseDocenteScreen';  // pendiente (docente)
 
 const Stack = createNativeStackNavigator();
 const Tab   = createBottomTabNavigator();
@@ -54,6 +55,7 @@ function DocenteStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="MisClasesDocente"   component={MisClasesDocenteScreen} />
+      <Stack.Screen name="ModulosClaseDocente" component={ModulosClaseDocenteScreen} />
       <Stack.Screen name="ConfigurarFeedback" component={ConfigurarFeedbackScreen} />
     </Stack.Navigator>
   );
