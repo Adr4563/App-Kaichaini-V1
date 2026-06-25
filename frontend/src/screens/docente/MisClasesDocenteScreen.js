@@ -1,5 +1,6 @@
 // MisClasesDocenteScreen.js
 // H.U. 317 - Visualizacion de clases del docente
+// H.U. 317 - Cierre de sesion del docente
 
 import React, { useState, useCallback } from 'react';
 import { View, Text, ScrollView, ActivityIndicator, TouchableOpacity } from 'react-native';
@@ -7,11 +8,13 @@ import { Feather } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
+import LogoutModal from '../../components/LogoutModal';
 
 export default function MisClasesDocenteScreen({ navigation }) {
-  const { usuario } = useAuth();
-  const [clases,   setClases]   = useState([]);
-  const [cargando, setCargando] = useState(true);
+  const { usuario, logout } = useAuth();
+  const [clases,     setClases]     = useState([]);
+  const [cargando,   setCargando]   = useState(true);
+  const [showLogout, setShowLogout] = useState(false);
 
   const cargarClases = async () => {
     try {
@@ -42,10 +45,15 @@ export default function MisClasesDocenteScreen({ navigation }) {
 
       <View style={{
         height: 80, paddingHorizontal: 16, paddingTop: 24,
-        flexDirection: 'row', alignItems: 'center',
+        flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
         borderBottomWidth: 1, borderBottomColor: '#eaeaea',
       }}>
         <Text style={{ fontSize: 18, fontWeight: '700', color: '#1a1a1a' }}>Mis clases</Text>
+
+        {/* H.U. 317 - Cierre de sesion del docente */}
+        <TouchableOpacity onPress={() => setShowLogout(true)}>
+          <Feather name="log-out" size={20} color="#cc0000" />
+        </TouchableOpacity>
       </View>
 
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 40 }}>
@@ -96,6 +104,12 @@ export default function MisClasesDocenteScreen({ navigation }) {
         )}
 
       </ScrollView>
+
+      <LogoutModal
+        visible={showLogout}
+        onCancel={() => setShowLogout(false)}
+        onConfirm={async () => { setShowLogout(false); await logout(); }}
+      />
     </View>
   );
 }

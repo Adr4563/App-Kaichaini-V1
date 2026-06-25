@@ -10,6 +10,7 @@ router.put('/auth/perfil', AuthController.personalizarPerfil);
 router.post('/auth/cambiar-contrasena', AuthController.cambiarContrasena);
 router.post('/auth/forgot-password', AuthController.olvideContrasena);
 router.post('/auth/reset-password', AuthController.restablecerContrasena);
+// H.U. 317 - Cierre de sesion del docente
 router.post('/auth/logout', AuthController.cerrarSesion);
 
 module.exports = router;

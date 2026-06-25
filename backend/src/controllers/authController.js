@@ -196,6 +196,7 @@ class AuthController {
     }
   }
 
+  // H.U. 317 - Cierre de sesion del docente
   static async cerrarSesion(req, res) {
     res.status(200).json({ success: true, message: 'Logout exitoso' });
   }
