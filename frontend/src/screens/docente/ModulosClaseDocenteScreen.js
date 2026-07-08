@@ -8,7 +8,7 @@ import {
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
-import { getModulosByClase } from '../../services/modulosService';
+import api from '../../services/api';
 
 const BIMESTRES = ['I', 'II', 'III', 'IV'];
 
@@ -23,8 +23,8 @@ export default function ModulosClaseDocenteScreen({ route, navigation }) {
     setError(null);
     setCargando(true);
     try {
-      const data = await getModulosByClase(idClase);
-      setModulos(data || []);
+      const { data } = await api.get('/modulos', { params: { idClase } });
+      setModulos(data.data || []);
     } catch (_) {
       setError('No se pudieron cargar los módulos.');
     } finally {
