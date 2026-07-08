@@ -210,10 +210,26 @@ curl http://localhost:3000/api/v1/users
 
 ## 🧪 Testing
 
-Ejecutar tests:
+Este proyecto usa **Vitest** para las pruebas. Ya está declarado en `package.json` (`devDependencies`), así que no hace falta instalarlo aparte: basta con `npm install`.
+
+### Ejecutar los tests
+
 ```bash
-npm test
+npm test          # corre todos los tests una vez, con reporte de coverage
+npm run test:watch   # modo watch, útil mientras desarrollas
 ```
+
+### Tipos de test en `tests/`
+
+- **Unitarios**: usan `vi.spyOn` para mockear los modelos (capa de datos), así que **no** tocan la base de datos. Corren rápido y son el patrón recomendado para la mayoría de casos.
+- **Integración** (ej. `tests/adrian.test.js`): sí usan la base de datos real (el RDS compartido del equipo, configurado en `src/config/database.js`). No borran datos: si necesitan un registro de prueba, lo crean una sola vez (buscándolo primero por un correo/identificador claramente marcado como test, ej. `*@kaichaini.test`) y lo reutilizan en corridas futuras.
+
+### Cómo escribir un test nuevo
+
+1. Crea el archivo en `tests/` con el sufijo `.test.js`.
+2. Si vas a testear un controller que usa un modelo (BD), decide si el test es unitario (mockea el modelo con `vi.spyOn`) o de integración (usa el modelo real).
+3. Simula `req`/`res` de Express con objetos planos y `vi.fn()` (ver `tests/adrian.test.js` como plantilla).
+4. Verifica el resultado revisando con qué argumentos se llamó `res.status`/`res.json`.
 
 ## 🔒 Seguridad
 
