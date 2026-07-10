@@ -7,6 +7,7 @@ import {
   ScrollView, Alert,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import api from '../../services/api';
 
 export default function CrearEjercicioSeleccionScreen({ route, navigation }) {
   const { idClase, nombreModulo, idModulo } = route.params || {};
@@ -15,6 +16,7 @@ export default function CrearEjercicioSeleccionScreen({ route, navigation }) {
   const [opciones,  setOpciones]      = useState([{ texto: '', id: 1 }, { texto: '', id: 2 }]);
   const [correctaId, setCorrectaId]   = useState(null);
   const [nuevoTexto, setNuevoTexto]   = useState('');
+  const [guardando, setGuardando]     = useState(false);
 
   let nextId = opciones.length > 0 ? Math.max(...opciones.map(o => o.id)) + 1 : 1;
 
@@ -33,10 +35,39 @@ export default function CrearEjercicioSeleccionScreen({ route, navigation }) {
     if (correctaId === id) setCorrectaId(null);
   };
 
-  const handleGuardar = () => {
-    // TODO: Conectar con backend — POST /ejercicios
-    // { idModulo, tipo: 'seleccion_multiple', enunciado, opciones, correctaId }
-    console.log('Guardar ejercicio selección múltiple', { idModulo, enunciado, opciones, correctaId });
+  const handleGuardar = async () => {
+    if (!puedeGuardar || guardando) return;
+
+    const respuestaCorrecta = opciones.find((opcion) => opcion.id === correctaId)?.texto?.trim() || null;
+    const opcionesPayload = opciones.map((opcion) => String(opcion.texto).trim()).filter(Boolean);
+
+    if (!idModulo) {
+      Alert.alert('Falta módulo', 'No se pudo identificar el módulo para guardar el ejercicio.');
+      return;
+    }
+
+    if (!respuestaCorrecta) {
+      Alert.alert('Falta respuesta', 'Selecciona una opción como respuesta correcta.');
+      return;
+    }
+
+    try {
+      setGuardando(true);
+      const { data } = await api.post('/ejercicios/seleccion-multiple', {
+        idModulo,
+        enunciado: enunciado.trim(),
+        respuestaCorrecta,
+        opciones: opcionesPayload,
+      });
+
+      Alert.alert('Éxito', data?.message || 'Ejercicio creado correctamente');
+      navigation.goBack();
+    } catch (error) {
+      const message = error?.response?.data?.message || 'No se pudo crear el ejercicio';
+      Alert.alert('Error', message);
+    } finally {
+      setGuardando(false);
+    }
   };
 
   const puedeGuardar = enunciado.trim().length > 0
@@ -117,12 +148,12 @@ export default function CrearEjercicioSeleccionScreen({ route, navigation }) {
 
         {/* Botón guardar */}
         <TouchableOpacity
-          style={[s.guardarBtn, !puedeGuardar && s.guardarBtnDisabled]}
+          style={[s.guardarBtn, (!puedeGuardar || guardando) && s.guardarBtnDisabled]}
           onPress={handleGuardar}
-          disabled={!puedeGuardar}
+          disabled={!puedeGuardar || guardando}
         >
           <Feather name="save" size={18} color="#fff" />
-          <Text style={s.guardarBtnText}>Guardar ejercicio</Text>
+          <Text style={s.guardarBtnText}>{guardando ? 'Guardando...' : 'Guardar ejercicio'}</Text>
         </TouchableOpacity>
 
       </ScrollView>
