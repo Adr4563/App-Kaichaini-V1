@@ -98,41 +98,41 @@ describe('AuthController.iniciarSesionDocente (H.U. 013, integración con BD rea
     expect(res.status).toHaveBeenCalledWith(401);
   });
 
-  test('[CNV2-formato] debería rechazar si el correo no tiene "@"', async () => {
+  test('[CNV2-formato] debería rechazar con error de formato si el correo no tiene "@"', async () => {
     const req = { body: { correo: 'nodomaintest.com', contrasena: CONTRASENA_DOCENTE_PRUEBA } };
     const res = crearRes();
 
     await AuthController.iniciarSesionDocente(req, res);
 
-    expect(res.status).toHaveBeenCalledWith(401);
+    expect(res.status).toHaveBeenCalledWith(400);
   });
 
-  test('[CNV2-formato] debería rechazar si el correo no tiene nombre (empieza con "@")', async () => {
+  test('[CNV2-formato] debería rechazar con error de formato si el correo no tiene nombre (empieza con "@")', async () => {
     const req = { body: { correo: '@kaichaini.test', contrasena: CONTRASENA_DOCENTE_PRUEBA } };
     const res = crearRes();
 
     await AuthController.iniciarSesionDocente(req, res);
 
-    expect(res.status).toHaveBeenCalledWith(401);
+    expect(res.status).toHaveBeenCalledWith(400);
   });
 
-  test('[CNV2-formato] debería rechazar si el correo no tiene dominio (termina en "@")', async () => {
+  test('[CNV2-formato] debería rechazar con error de formato si el correo no tiene dominio (termina en "@")', async () => {
     const req = { body: { correo: 'test.docente@', contrasena: CONTRASENA_DOCENTE_PRUEBA } };
     const res = crearRes();
 
     await AuthController.iniciarSesionDocente(req, res);
 
-    expect(res.status).toHaveBeenCalledWith(401);
+    expect(res.status).toHaveBeenCalledWith(400);
   });
 });
 
 // ============================================================
 // H.U. 007 - Inicio de sesion del Estudiante
 // Metodo generico AuthController.iniciarSesion() (POST /auth/login).
-// No existe un metodo "iniciarSesionEstudiante" dedicado; este metodo
-// tampoco filtra por rol, a diferencia de iniciarSesionDocente().
+// No existe un metodo "iniciarSesionEstudiante" dedicado, pero desde la
+// correccion de DEF-02 este metodo si valida que el rol sea Estudiante.
 // Clases de equivalencia (correo / contrasena):
-//   CV1  = correo registrado y contrasena coincide (cualquier rol)
+//   CV1  = correo registrado con rol Estudiante y contrasena coincide
 //   CV2  = contrasena coincide con la almacenada
 //   CNV1 = correo vacio
 //   CNV2 = correo no registrado en la BD
@@ -183,40 +183,40 @@ describe('AuthController.iniciarSesion (H.U. 007, integración con BD real)', ()
     expect(res.json).toHaveBeenCalledWith({ success: false, message: 'Credenciales invalidas' });
   });
 
-  test('[CNV3] debería rechazar si el correo es numérico', async () => {
+  test('[CNV3] debería rechazar con error de formato si el correo es numérico', async () => {
     const req = { body: { correo: 12345, contrasena: CONTRASENA_ESTUDIANTE_PRUEBA } };
     const res = crearRes();
 
     await AuthController.iniciarSesion(req, res);
 
-    expect(res.status).toHaveBeenCalledWith(401);
+    expect(res.status).toHaveBeenCalledWith(400);
   });
 
-  test('[CNV2-formato] debería rechazar si el correo no tiene "@"', async () => {
+  test('[CNV2-formato] debería rechazar con error de formato si el correo no tiene "@"', async () => {
     const req = { body: { correo: 'nodomaintest.com', contrasena: CONTRASENA_ESTUDIANTE_PRUEBA } };
     const res = crearRes();
 
     await AuthController.iniciarSesion(req, res);
 
-    expect(res.status).toHaveBeenCalledWith(401);
+    expect(res.status).toHaveBeenCalledWith(400);
   });
 
-  test('[CNV2-formato] debería rechazar si el correo no tiene nombre (empieza con "@")', async () => {
+  test('[CNV2-formato] debería rechazar con error de formato si el correo no tiene nombre (empieza con "@")', async () => {
     const req = { body: { correo: '@kaichaini.test', contrasena: CONTRASENA_ESTUDIANTE_PRUEBA } };
     const res = crearRes();
 
     await AuthController.iniciarSesion(req, res);
 
-    expect(res.status).toHaveBeenCalledWith(401);
+    expect(res.status).toHaveBeenCalledWith(400);
   });
 
-  test('[CNV2-formato] debería rechazar si el correo no tiene dominio (termina en "@")', async () => {
+  test('[CNV2-formato] debería rechazar con error de formato si el correo no tiene dominio (termina en "@")', async () => {
     const req = { body: { correo: 'test.estudiante@', contrasena: CONTRASENA_ESTUDIANTE_PRUEBA } };
     const res = crearRes();
 
     await AuthController.iniciarSesion(req, res);
 
-    expect(res.status).toHaveBeenCalledWith(401);
+    expect(res.status).toHaveBeenCalledWith(400);
   });
 
   test('[CNV5] debería rechazar si la contrasena es incorrecta', async () => {
@@ -237,16 +237,12 @@ describe('AuthController.iniciarSesion (H.U. 007, integración con BD real)', ()
     expect(res.status).toHaveBeenCalledWith(401);
   });
 
-  // HALLAZGO: iniciarSesion() no valida rol, por lo que un Docente
-  // tambien puede autenticarse por el endpoint generico de estudiante.
-  // Este test documenta el comportamiento ACTUAL (no el deseado); debe
-  // actualizarse a 401 cuando se agregue el filtro de rol Estudiante.
-  test('[HALLAZGO] permite login de un Docente por el endpoint genérico (sin filtro de rol)', async () => {
+  test('[CNV-rol] debería rechazar si el usuario no tiene rol Estudiante', async () => {
     const req = { body: { correo: CORREO_DOCENTE_PRUEBA, contrasena: CONTRASENA_DOCENTE_PRUEBA } };
     const res = crearRes();
 
     await AuthController.iniciarSesion(req, res);
 
-    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.status).toHaveBeenCalledWith(401);
   });
 });
