@@ -1,0 +1,35 @@
+{
+  "name": "kaichaini-backend",
+  "version": "1.0.0",
+  "description": "Backend API siguiendo principios SOLID",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "test": "vitest run --coverage",
+    "test:watch": "vitest"
+  },
+  "keywords": [
+    "solid",
+    "node",
+    "express"
+  ],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.0.3",
+    "express": "^5.2.1",
+    "helmet": "^7.0.0",
+    "jsonwebtoken": "^9.0.2",
+    "pg": "^8.11.3",
+    "uuid": "^9.0.0"
+  },
+  "devDependencies": {
+    "@vitest/coverage-v8": "^4.1.10",
+    "nodemon": "^3.0.1",
+    "vitest": "^4.1.10"
+  }
+}
