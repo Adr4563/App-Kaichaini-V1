@@ -1,35 +1,63 @@
 // EditarSilaboScreen.js
-// H.U. 406 - Actualización del contenido del sílabo con vista previa (solo UI)
+// H.U. 406 - Actualización del contenido del sílabo con vista previa
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView,
+  View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-
-const MOCK_SILABO = `Curso de Matemática - 3er Grado
-
-Objetivos:
-• Desarrollar el pensamiento lógico-matemático
-• Resolver problemas de la vida cotidiana
-• Dominar las operaciones básicas
-
-Contenido:
-Bimestre I: Números naturales, adición y sustracción
-Bimestre II: Multiplicación, división y fracciones
-Bimestre III: Geometría básica y mediciones
-Bimestre IV: Estadística y probabilidad`;
+import { useFocusEffect } from '@react-navigation/native';
+import api from '../../services/api';
 
 export default function EditarSilaboScreen({ route, navigation }) {
   const { idClase, nombreClase } = route.params || {};
 
-  const [contenido,    setContenido]    = useState(MOCK_SILABO);
-  const [previewing,   setPreviewing]   = useState(false);
+  const [contenido,   setContenido]   = useState('');
+  const [previewing,  setPreviewing]  = useState(false);
+  const [cargando,    setCargando]    = useState(true);
+  const [guardando,   setGuardando]   = useState(false);
+  const [guardado,    setGuardado]    = useState(false);
+  const [error,       setError]       = useState('');
 
-  const handleConfirmar = () => {
-    // TODO: Conectar con backend — PUT /silabos/:idClase { contenido }
-    console.log('Confirmar sílabo', { idClase, contenido });
+  const cargarSilabo = async () => {
+    setCargando(true);
+    setError('');
+    try {
+      const { data } = await api.get(`/silabos/${idClase}`);
+      setContenido(data.data?.contenido || '');
+    } catch (e) {
+      if (e.response?.status !== 404) {
+        setError('No se pudo cargar el sílabo.');
+      }
+    } finally {
+      setCargando(false);
+    }
   };
+
+  useFocusEffect(useCallback(() => { cargarSilabo(); }, [idClase]));
+
+  const handleConfirmar = async () => {
+    setGuardando(true);
+    setGuardado(false);
+    setError('');
+    try {
+      await api.put(`/silabos/${idClase}`, { contenido });
+      setGuardado(true);
+      setTimeout(() => setGuardado(false), 3000);
+    } catch (e) {
+      setError('No se pudo guardar el sílabo.');
+    } finally {
+      setGuardando(false);
+    }
+  };
+
+  if (cargando) {
+    return (
+      <View style={s.center}>
+        <ActivityIndicator size="large" color="#1a1a1a" />
+      </View>
+    );
+  }
 
   return (
     <View style={s.container}>
@@ -86,14 +114,27 @@ export default function EditarSilaboScreen({ route, navigation }) {
           </View>
         )}
 
+        {error ? <Text style={s.errorText}>{error}</Text> : null}
+        {guardado ? <Text style={s.successText}>Sílabo guardado correctamente.</Text> : null}
+
       </ScrollView>
 
       {/* Botón confirmar (solo visible en vista previa) */}
       {previewing && (
         <View style={s.footer}>
-          <TouchableOpacity style={s.confirmarBtn} onPress={handleConfirmar}>
-            <Feather name="check-circle" size={18} color="#fff" />
-            <Text style={s.confirmarBtnText}>Confirmar cambios</Text>
+          <TouchableOpacity
+            style={[s.confirmarBtn, guardando && s.confirmarBtnDisabled]}
+            onPress={handleConfirmar}
+            disabled={guardando}
+          >
+            {guardando ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <>
+                <Feather name="check-circle" size={18} color="#fff" />
+                <Text style={s.confirmarBtnText}>Confirmar cambios</Text>
+              </>
+            )}
           </TouchableOpacity>
         </View>
       )}
@@ -104,6 +145,7 @@ export default function EditarSilaboScreen({ route, navigation }) {
 
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff' },
 
   header: {
     paddingHorizontal: 16, paddingTop: 24, paddingBottom: 12,
@@ -142,6 +184,9 @@ const s = StyleSheet.create({
   },
   previewText: { fontSize: 15, color: '#1a1a1a', lineHeight: 24 },
 
+  errorText: { color: '#c62828', fontSize: 13, marginTop: 14 },
+  successText: { color: '#2e7d32', fontSize: 13, marginTop: 14 },
+
   // Footer
   footer: {
     padding: 16, borderTopWidth: 1, borderTopColor: '#eaeaea',
@@ -150,5 +195,6 @@ const s = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
     backgroundColor: '#16a34a', borderRadius: 10, paddingVertical: 14,
   },
+  confirmarBtnDisabled: { opacity: 0.6 },
   confirmarBtnText: { fontSize: 15, fontWeight: '700', color: '#fff' },
 });

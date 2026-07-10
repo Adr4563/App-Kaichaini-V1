@@ -21,7 +21,15 @@ class Silabo {
       `UPDATE silabo SET ${fields.join(', ')} WHERE idclase = $${i} RETURNING id, idclase AS "idClase", archivourl AS "archivoUrl", contenido, fechasubida AS "fechaSubida"`,
       values
     );
-    return rows[0] || null;
+    if (rows[0]) return rows[0];
+
+    // La clase todavia no tiene un silabo creado: se crea en la primera edicion del docente.
+    const { rows: creado } = await pool.query(
+      `INSERT INTO silabo (idclase, archivourl, contenido) VALUES ($1, $2, $3)
+       RETURNING id, idclase AS "idClase", archivourl AS "archivoUrl", contenido, fechasubida AS "fechaSubida"`,
+      [idClase, archivoUrl || '', contenido || '']
+    );
+    return creado[0] || null;
   }
 }
 

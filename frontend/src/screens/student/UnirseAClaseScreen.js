@@ -7,7 +7,7 @@ import { Feather } from '@expo/vector-icons';
 import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 
-const CODE_LEN = 6;
+const CODE_LEN = 8;
 
 export default function UnirseAClaseScreen({ navigation }) {
   const { usuario } = useAuth();
@@ -157,7 +157,7 @@ export default function UnirseAClaseScreen({ navigation }) {
         </View>
 
         <Text style={{ fontSize: 12, color: '#9e9e9e', marginBottom: 28 }}>
-          6 caracteres · solo letras y números
+          8 caracteres · solo letras y números
         </Text>
 
         {error ? <Text style={{ color: '#c62828', fontSize: 13, marginBottom: 12 }}>{error}</Text> : null}
