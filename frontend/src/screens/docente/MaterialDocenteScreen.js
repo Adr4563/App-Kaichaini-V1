@@ -1,43 +1,78 @@
 // MaterialDocenteScreen.js
-// H.U. 417 - Visualización de material subido por el docente (solo UI)
-// H.U. 407 - Eliminación de material subido por parte del docente (solo UI)
+// H.U. 417 - Visualización de material subido por el docente
+// H.U. 407 - Eliminación de material subido por parte del docente
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet, ScrollView,
-  Modal, Linking,
+  Modal, Linking, ActivityIndicator,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
+import api from '../../services/api';
 
+// Config por tipo. Se busca por clave en minúscula porque la BD guarda el
+// tipo como 'pdf' / 'video' / 'enlace'. El label se muestra normalizado.
 const TIPO_CONFIG = {
-  PDF:    { icon: 'file-text', color: '#dc2626' },
-  Video:  { icon: 'play-circle', color: '#7c3aed' },
-  Enlace: { icon: 'link',        color: '#2563eb' },
+  pdf:    { label: 'PDF',    icon: 'file-text',   color: '#dc2626' },
+  video:  { label: 'Video',  icon: 'play-circle', color: '#7c3aed' },
+  enlace: { label: 'Enlace', icon: 'link',        color: '#2563eb' },
+  link:   { label: 'Enlace', icon: 'link',        color: '#2563eb' },
 };
 
-const MOCK_MATERIALES = [
-  { id: 1, nombre: 'Guía de ejercicios - Bimestre I',  tipo: 'PDF',    url: 'https://ejemplo.com/guia-b1.pdf' },
-  { id: 2, nombre: 'Video: Multiplicación paso a paso', tipo: 'Video',  url: 'https://ejemplo.com/video-mult.mp4' },
-  { id: 3, nombre: 'Ejercicios interactivos',           tipo: 'Enlace', url: 'https://ejemplo.com/ejercicios' },
-  { id: 4, nombre: 'Tabla de fórmulas',                 tipo: 'PDF',    url: 'https://ejemplo.com/formulas.pdf' },
-  { id: 5, nombre: 'Video: Fracciones para niños',      tipo: 'Video',  url: 'https://ejemplo.com/video-fracc.mp4' },
-];
+const configTipo = (tipo) => {
+  const cfg = TIPO_CONFIG[(tipo || '').toLowerCase()];
+  if (cfg) return cfg;
+  return { label: (tipo || 'Archivo').toUpperCase(), icon: 'file', color: '#2563eb' };
+};
 
 export default function MaterialDocenteScreen({ route, navigation }) {
   const { idClase, nombreClase } = route.params || {};
 
-  const [materiales, setMateriales]     = useState(MOCK_MATERIALES);
+  const [materiales,   setMateriales]   = useState([]);
+  const [cargando,     setCargando]     = useState(true);
+  const [error,        setError]        = useState('');
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [eliminando,   setEliminando]   = useState(false);
 
-  const handleEliminar = () => {
-    // TODO: Conectar con backend — DELETE /materiales/:id
-    console.log('Eliminar material', deleteTarget?.id);
-    setMateriales(materiales.filter(m => m.id !== deleteTarget?.id));
-    setDeleteTarget(null);
+  // ── H.U. 417 - Cargar material de la clase ──────────────────────────────
+  const cargarMateriales = async () => {
+    try {
+      setError('');
+      const { data } = await api.get(`/material?idClase=${idClase}`);
+      setMateriales(data.data || []);
+    } catch (_) {
+      setError('No se pudo cargar el material. Intenta de nuevo.');
+      setMateriales([]);
+    }
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!idClase) { setCargando(false); return; }
+      setCargando(true);
+      cargarMateriales().finally(() => setCargando(false));
+    }, [idClase]),
+  );
+
+  // ── H.U. 407 - Eliminar material ────────────────────────────────────────
+  const handleEliminar = async () => {
+    if (!deleteTarget) return;
+    const target = deleteTarget;
+    setEliminando(true);
+    try {
+      await api.delete(`/material/${target.id}`);
+      setMateriales(prev => prev.filter(m => m.id !== target.id));
+      setDeleteTarget(null);
+    } catch (_) {
+      setError('No se pudo eliminar el material. Intenta de nuevo.');
+    } finally {
+      setEliminando(false);
+    }
   };
 
   const handleAbrirUrl = (url) => {
-    // TODO: Validar URL antes de abrir
+    if (!url) return;
     Linking.openURL(url).catch(() => {});
   };
 
@@ -55,8 +90,24 @@ export default function MaterialDocenteScreen({ route, navigation }) {
         </View>
       </View>
 
-      {/* Lista de materiales */}
-      {materiales.length === 0 ? (
+      {/* Contenido */}
+      {cargando ? (
+        <View style={s.center}>
+          <ActivityIndicator size="large" color="#1a1a1a" />
+        </View>
+      ) : error && materiales.length === 0 ? (
+        <View style={s.center}>
+          <Feather name="alert-circle" size={48} color="#d1d5db" style={{ marginBottom: 14 }} />
+          <Text style={s.emptyTitle}>Ocurrió un error</Text>
+          <Text style={s.emptySubtitle}>{error}</Text>
+          <TouchableOpacity
+            style={s.retryBtn}
+            onPress={() => { setCargando(true); cargarMateriales().finally(() => setCargando(false)); }}
+          >
+            <Text style={s.retryBtnText}>Reintentar</Text>
+          </TouchableOpacity>
+        </View>
+      ) : materiales.length === 0 ? (
         <View style={s.center}>
           <Feather name="folder" size={48} color="#d1d5db" style={{ marginBottom: 14 }} />
           <Text style={s.emptyTitle}>No hay materiales</Text>
@@ -65,7 +116,7 @@ export default function MaterialDocenteScreen({ route, navigation }) {
       ) : (
         <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 40 }}>
           {materiales.map(material => {
-            const cfg = TIPO_CONFIG[material.tipo] || TIPO_CONFIG.Enlace;
+            const cfg = configTipo(material.tipo);
             return (
               <View key={material.id} style={s.card}>
                 <View style={[s.tipoIcon, { backgroundColor: cfg.color + '15' }]}>
@@ -77,12 +128,12 @@ export default function MaterialDocenteScreen({ route, navigation }) {
 
                   <View style={s.metaRow}>
                     <View style={[s.tipoBadge, { backgroundColor: cfg.color + '15' }]}>
-                      <Text style={[s.tipoBadgeText, { color: cfg.color }]}>{material.tipo}</Text>
+                      <Text style={[s.tipoBadgeText, { color: cfg.color }]}>{cfg.label}</Text>
                     </View>
                   </View>
 
-                  <TouchableOpacity onPress={() => handleAbrirUrl(material.url)}>
-                    <Text style={s.url} numberOfLines={1}>{material.url}</Text>
+                  <TouchableOpacity onPress={() => handleAbrirUrl(material.archivoUrl)}>
+                    <Text style={s.url} numberOfLines={1}>{material.archivoUrl}</Text>
                   </TouchableOpacity>
                 </View>
 
@@ -110,14 +161,21 @@ export default function MaterialDocenteScreen({ route, navigation }) {
 
             <View style={s.modalBtns}>
               <TouchableOpacity
-                style={s.modalBtnCancel}
+                style={[s.modalBtnCancel, eliminando && s.btnDisabled]}
                 onPress={() => setDeleteTarget(null)}
+                disabled={eliminando}
               >
                 <Text style={s.modalBtnCancelText}>Cancelar</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity style={s.modalBtnDelete} onPress={handleEliminar}>
-                <Text style={s.modalBtnDeleteText}>Eliminar</Text>
+              <TouchableOpacity
+                style={[s.modalBtnDelete, eliminando && s.btnDisabled]}
+                onPress={handleEliminar}
+                disabled={eliminando}
+              >
+                {eliminando
+                  ? <ActivityIndicator size="small" color="#fff" />
+                  : <Text style={s.modalBtnDeleteText}>Eliminar</Text>}
               </TouchableOpacity>
             </View>
           </View>
@@ -141,9 +199,14 @@ const s = StyleSheet.create({
   headerTitle: { fontSize: 17, fontWeight: '700', color: '#1a1a1a' },
   headerSubtitle: { fontSize: 12, color: '#888', marginTop: 2 },
 
-  // Empty
+  // Empty / error
   emptyTitle: { fontSize: 16, fontWeight: '700', color: '#1a1a1a', marginBottom: 6 },
   emptySubtitle: { fontSize: 13, color: '#888', textAlign: 'center', lineHeight: 20 },
+  retryBtn: {
+    marginTop: 18, borderWidth: 1, borderColor: '#e0e0e0', borderRadius: 10,
+    paddingVertical: 10, paddingHorizontal: 22,
+  },
+  retryBtnText: { fontSize: 14, fontWeight: '600', color: '#1a1a1a' },
 
   // Card
   card: {
@@ -184,4 +247,5 @@ const s = StyleSheet.create({
     paddingVertical: 12, alignItems: 'center',
   },
   modalBtnDeleteText: { fontSize: 14, fontWeight: '600', color: '#fff' },
+  btnDisabled: { opacity: 0.5 },
 });
