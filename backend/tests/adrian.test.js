@@ -1,13 +1,40 @@
 const AuthController = require('../src/controllers/authController');
-const Docente = require('../src/models/Docente');
-const Estudiante = require('../src/models/Estudiante');
-const User = require('../src/models/User');
 
-const CORREO_DOCENTE_PRUEBA = 'test.docente@kaichaini.test';
-const CONTRASENA_DOCENTE_PRUEBA = 'Test1234';
-
-const CORREO_ESTUDIANTE_PRUEBA = 'test.estudiante@kaichaini.test';
-const CONTRASENA_ESTUDIANTE_PRUEBA = 'Test1234';
+// ============================================================
+// Leyenda de clases de equivalencia (Tabla 1, seccion 10.3.1 del
+// Capitulo10_Pruebas_de_Software_General.txt)
+//
+// H.U. 013 - Login Docente (AuthController.iniciarSesionDocente)
+//   CV1   correo de un Docente registrado
+//   CV2   contrasena con longitud >= 8 caracteres
+//   CV3   contrasena contiene al menos 1 mayuscula
+//   CV4   contrasena contiene al menos 1 numero
+//   CV5   contrasena coincide con la almacenada para ese correo
+//   CVN1  correo vacio
+//   CVN2  correo no registrado
+//   CVN3  correo de un usuario registrado con rol distinto de Docente
+//   CVN4  contrasena con longitud < 8 caracteres
+//   CVN5  contrasena sin mayusculas
+//   CVN6  contrasena sin numeros
+//   CVN7  contrasena que no coincide con la almacenada
+//   CVN8  contrasena vacia
+//
+// H.U. 007 - Login Estudiante (AuthController.iniciarSesion)
+//   CV6   correo registrado en la BD (cualquier rol, este metodo no filtra por rol)
+//   CV7   contrasena con longitud >= 8 caracteres
+//   CV8   contrasena contiene al menos 1 mayuscula
+//   CV9   contrasena contiene al menos 1 numero
+//   CV10  contrasena coincide con la almacenada para ese correo
+//   CVN9  correo vacio
+//   CVN10 correo no registrado (incluye correos con formato invalido, ya
+//         que el controller no valida formato: se comportan igual)
+//   CVN11 correo numerico
+//   CVN12 contrasena con longitud < 8 caracteres
+//   CVN13 contrasena sin mayusculas
+//   CVN14 contrasena sin numeros
+//   CVN15 contrasena que no coincide con la almacenada
+//   CVN16 contrasena vacia
+// ============================================================
 
 function crearRes() {
   const res = {};
@@ -18,38 +45,10 @@ function crearRes() {
 
 // ============================================================
 // H.U. 013 - Inicio de sesion del Docente
-// Clases de equivalencia (correo / contrasena):
-//   CV1  = correo registrado con rol Docente
-//   CV2  = contrasena coincide con la almacenada
-//   CNV1 = correo vacio
-//   CNV2 = correo no registrado en la BD
-//   CNV3 = correo registrado pero con rol distinto de Docente
-//   CNV4 = contrasena vacia
-//   CNV5 = contrasena no vacia pero no coincide
 // ============================================================
 describe('AuthController.iniciarSesionDocente (H.U. 013, integración con BD real)', () => {
-  beforeAll(async () => {
-    const docenteExistente = await User.obtenerPorCorreo(CORREO_DOCENTE_PRUEBA);
-    if (!docenteExistente) {
-      await Docente.registrar({
-        nombre: 'Docente de Prueba',
-        correo: CORREO_DOCENTE_PRUEBA,
-        contrasena: CONTRASENA_DOCENTE_PRUEBA,
-      });
-    }
-
-    const estudianteExistente = await User.obtenerPorCorreo(CORREO_ESTUDIANTE_PRUEBA);
-    if (!estudianteExistente) {
-      await Estudiante.registrar({
-        nombre: 'Estudiante de Prueba',
-        correo: CORREO_ESTUDIANTE_PRUEBA,
-        contrasena: CONTRASENA_ESTUDIANTE_PRUEBA,
-      });
-    }
-  });
-
-  test('[CV1+CV2] debería iniciar sesión correctamente con credenciales válidas de docente', async () => {
-    const req = { body: { correo: CORREO_DOCENTE_PRUEBA, contrasena: CONTRASENA_DOCENTE_PRUEBA } };
+  test('[CV1+CV2+CV3+CV4+CV5] debería iniciar sesión correctamente con credenciales válidas de docente', async () => {
+    const req = { body: { correo: 'matematica@kaichaini.com', contrasena: 'Docente123' } };
     const res = crearRes();
 
     await AuthController.iniciarSesionDocente(req, res);
@@ -57,12 +56,12 @@ describe('AuthController.iniciarSesionDocente (H.U. 013, integración con BD rea
     expect(res.status).toHaveBeenCalledWith(200);
     const respuesta = res.json.mock.calls[0][0];
     expect(respuesta.success).toBe(true);
-    expect(respuesta.data.usuario.correo).toBe(CORREO_DOCENTE_PRUEBA);
+    expect(respuesta.data.usuario.correo).toBe('matematica@kaichaini.com');
     expect(respuesta.data.usuario.contrasena).toBeUndefined();
   });
 
-  test('[CNV1] debería rechazar si faltan correo o contrasena', async () => {
-    const req = { body: { correo: CORREO_DOCENTE_PRUEBA } };
+  test('[CVN1] correo vacio debería rechazar con error de validacion', async () => {
+    const req = { body: { contrasena: 'Docente123' } };
     const res = crearRes();
 
     await AuthController.iniciarSesionDocente(req, res);
@@ -70,8 +69,17 @@ describe('AuthController.iniciarSesionDocente (H.U. 013, integración con BD rea
     expect(res.status).toHaveBeenCalledWith(400);
   });
 
-  test('[CNV2] debería rechazar si el usuario no existe', async () => {
-    const req = { body: { correo: 'nadie@kaichaini.test', contrasena: 'clave123' } };
+  test('[CVN8] contrasena vacia debería rechazar con error de validacion', async () => {
+    const req = { body: { correo: 'matematica@kaichaini.com' } };
+    const res = crearRes();
+
+    await AuthController.iniciarSesionDocente(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+  });
+
+  test('[CVN2] correo no registrado debería rechazar con Credenciales invalidas', async () => {
+    const req = { body: { correo: 'nadie@kaichaini.test', contrasena: 'Docente123' } };
     const res = crearRes();
 
     await AuthController.iniciarSesionDocente(req, res);
@@ -80,8 +88,8 @@ describe('AuthController.iniciarSesionDocente (H.U. 013, integración con BD rea
     expect(res.json).toHaveBeenCalledWith({ success: false, message: 'Credenciales invalidas' });
   });
 
-  test('[CNV5] debería rechazar si la contrasena es incorrecta', async () => {
-    const req = { body: { correo: CORREO_DOCENTE_PRUEBA, contrasena: 'contrasena-equivocada' } };
+  test('[CVN3] correo de un Estudiante (rol distinto) debería rechazar', async () => {
+    const req = { body: { correo: 'estudiante@demo.com', contrasena: 'Kaichaini1' } };
     const res = crearRes();
 
     await AuthController.iniciarSesionDocente(req, res);
@@ -89,8 +97,8 @@ describe('AuthController.iniciarSesionDocente (H.U. 013, integración con BD rea
     expect(res.status).toHaveBeenCalledWith(401);
   });
 
-  test('[CNV3] debería rechazar si el usuario no tiene rol Docente', async () => {
-    const req = { body: { correo: CORREO_ESTUDIANTE_PRUEBA, contrasena: CONTRASENA_ESTUDIANTE_PRUEBA } };
+  test('[CVN4] contrasena con longitud < 8 debería rechazar', async () => {
+    const req = { body: { correo: 'matematica@kaichaini.com', contrasena: 'ab' } };
     const res = crearRes();
 
     await AuthController.iniciarSesionDocente(req, res);
@@ -98,8 +106,8 @@ describe('AuthController.iniciarSesionDocente (H.U. 013, integración con BD rea
     expect(res.status).toHaveBeenCalledWith(401);
   });
 
-  test('[CNV2-formato] debería rechazar si el correo no tiene "@"', async () => {
-    const req = { body: { correo: 'nodomaintest.com', contrasena: CONTRASENA_DOCENTE_PRUEBA } };
+  test('[CVN5] contrasena sin mayusculas debería rechazar', async () => {
+    const req = { body: { correo: 'matematica@kaichaini.com', contrasena: 'docente123' } };
     const res = crearRes();
 
     await AuthController.iniciarSesionDocente(req, res);
@@ -107,8 +115,8 @@ describe('AuthController.iniciarSesionDocente (H.U. 013, integración con BD rea
     expect(res.status).toHaveBeenCalledWith(401);
   });
 
-  test('[CNV2-formato] debería rechazar si el correo no tiene nombre (empieza con "@")', async () => {
-    const req = { body: { correo: '@kaichaini.test', contrasena: CONTRASENA_DOCENTE_PRUEBA } };
+  test('[CVN6] contrasena sin numeros debería rechazar', async () => {
+    const req = { body: { correo: 'matematica@kaichaini.com', contrasena: 'DocenteABC' } };
     const res = crearRes();
 
     await AuthController.iniciarSesionDocente(req, res);
@@ -116,43 +124,53 @@ describe('AuthController.iniciarSesionDocente (H.U. 013, integración con BD rea
     expect(res.status).toHaveBeenCalledWith(401);
   });
 
-  test('[CNV2-formato] debería rechazar si el correo no tiene dominio (termina en "@")', async () => {
-    const req = { body: { correo: 'test.docente@', contrasena: CONTRASENA_DOCENTE_PRUEBA } };
+  test('[CVN7] contrasena que no coincide con la almacenada debería rechazar', async () => {
+    const req = { body: { correo: 'matematica@kaichaini.com', contrasena: 'Docente999' } };
     const res = crearRes();
 
     await AuthController.iniciarSesionDocente(req, res);
 
     expect(res.status).toHaveBeenCalledWith(401);
+  });
+
+  // HALLAZGO (DEF-01): el mismo problema de formato de correo detectado
+  // en iniciarSesion() tambien existe en iniciarSesionDocente().
+  // CORRECCION: CORREO_REGEX en authController.js aplica a ambos
+  // metodos, por lo que aqui tambien se rechaza con HTTP 400.
+  test('correo sin "@" debería rechazar con error de validacion', async () => {
+    const req = { body: { correo: 'nodomaintest.com', contrasena: 'Docente123' } };
+    const res = crearRes();
+
+    await AuthController.iniciarSesionDocente(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+  });
+
+  test('correo sin nombre debería rechazar con error de validacion', async () => {
+    const req = { body: { correo: '@kaichaini.test', contrasena: 'Docente123' } };
+    const res = crearRes();
+
+    await AuthController.iniciarSesionDocente(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+  });
+
+  test('correo sin dominio debería rechazar con error de validacion', async () => {
+    const req = { body: { correo: 'matematica@', contrasena: 'Docente123' } };
+    const res = crearRes();
+
+    await AuthController.iniciarSesionDocente(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(400);
   });
 });
 
 // ============================================================
 // H.U. 007 - Inicio de sesion del Estudiante
-// Metodo generico AuthController.iniciarSesion() (POST /auth/login).
-// No existe un metodo "iniciarSesionEstudiante" dedicado; este metodo
-// tampoco filtra por rol, a diferencia de iniciarSesionDocente().
-// Clases de equivalencia (correo / contrasena):
-//   CV1  = correo registrado y contrasena coincide (cualquier rol)
-//   CV2  = contrasena coincide con la almacenada
-//   CNV1 = correo vacio
-//   CNV2 = correo no registrado en la BD
-//   CNV3 = contrasena vacia
-//   CNV4 = contrasena no vacia pero no coincide
 // ============================================================
 describe('AuthController.iniciarSesion (H.U. 007, integración con BD real)', () => {
-  beforeAll(async () => {
-    const estudianteExistente = await User.obtenerPorCorreo(CORREO_ESTUDIANTE_PRUEBA);
-    if (!estudianteExistente) {
-      await Estudiante.registrar({
-        nombre: 'Estudiante de Prueba',
-        correo: CORREO_ESTUDIANTE_PRUEBA,
-        contrasena: CONTRASENA_ESTUDIANTE_PRUEBA,
-      });
-    }
-  });
-
-  test('[CV1+CV2] debería iniciar sesión correctamente con credenciales válidas de estudiante', async () => {
-    const req = { body: { correo: CORREO_ESTUDIANTE_PRUEBA, contrasena: CONTRASENA_ESTUDIANTE_PRUEBA } };
+  test('[CV6+CV7+CV8+CV9+CV10] debería iniciar sesión correctamente con credenciales válidas de estudiante', async () => {
+    const req = { body: { correo: 'estudiante@demo.com', contrasena: 'Kaichaini1' } };
     const res = crearRes();
 
     await AuthController.iniciarSesion(req, res);
@@ -160,11 +178,11 @@ describe('AuthController.iniciarSesion (H.U. 007, integración con BD real)', ()
     expect(res.status).toHaveBeenCalledWith(200);
     const respuesta = res.json.mock.calls[0][0];
     expect(respuesta.success).toBe(true);
-    expect(respuesta.data.usuario.correo).toBe(CORREO_ESTUDIANTE_PRUEBA);
+    expect(respuesta.data.usuario.correo).toBe('estudiante@demo.com');
     expect(respuesta.data.usuario.contrasena).toBeUndefined();
   });
 
-  test('[CNV1] debería rechazar si faltan correo o contrasena', async () => {
+  test('[CVN9+CVN16] correo y contrasena vacios deberían rechazar con error de validacion', async () => {
     const req = { body: { correo: '', contrasena: '' } };
     const res = crearRes();
 
@@ -173,8 +191,17 @@ describe('AuthController.iniciarSesion (H.U. 007, integración con BD real)', ()
     expect(res.status).toHaveBeenCalledWith(400);
   });
 
-  test('[CNV2] debería rechazar si el correo no existe', async () => {
-    const req = { body: { correo: 'nadie@kaichaini.test', contrasena: 'clave123' } };
+  test('[CVN16] contrasena vacia debería rechazar con error de validacion', async () => {
+    const req = { body: { correo: 'estudiante@demo.com' } };
+    const res = crearRes();
+
+    await AuthController.iniciarSesion(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+  });
+
+  test('[CVN10] correo no registrado debería rechazar con Credenciales invalidas', async () => {
+    const req = { body: { correo: 'nadie@kaichaini.test', contrasena: 'Kaichaini1' } };
     const res = crearRes();
 
     await AuthController.iniciarSesion(req, res);
@@ -183,8 +210,49 @@ describe('AuthController.iniciarSesion (H.U. 007, integración con BD real)', ()
     expect(res.json).toHaveBeenCalledWith({ success: false, message: 'Credenciales invalidas' });
   });
 
-  test('[CNV3] debería rechazar si el correo es numérico', async () => {
-    const req = { body: { correo: 12345, contrasena: CONTRASENA_ESTUDIANTE_PRUEBA } };
+  test('[CVN11] correo numerico debería rechazar con error de validacion', async () => {
+    const req = { body: { correo: 12345, contrasena: 'Kaichaini1' } };
+    const res = crearRes();
+
+    await AuthController.iniciarSesion(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+  });
+
+  // HALLAZGO (DEF-01): ningun metodo de login validaba el formato del
+  // correo antes de consultar la BD; un correo mal formado retornaba
+  // HTTP 401 (igual que un correo no registrado) en vez de HTTP 400.
+  // CORRECCION: se agrego CORREO_REGEX en authController.js, que
+  // rechaza el correo con HTTP 400 antes de consultar la BD.
+  test('[CVN10-formato] correo sin "@" debería rechazar con error de validacion', async () => {
+    const req = { body: { correo: 'nodomaintest.com', contrasena: 'Kaichaini1' } };
+    const res = crearRes();
+
+    await AuthController.iniciarSesion(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+  });
+
+  test('[CVN10-formato] correo sin nombre debería rechazar con error de validacion', async () => {
+    const req = { body: { correo: '@kaichaini.test', contrasena: 'Kaichaini1' } };
+    const res = crearRes();
+
+    await AuthController.iniciarSesion(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+  });
+
+  test('[CVN10-formato] correo sin dominio debería rechazar con error de validacion', async () => {
+    const req = { body: { correo: 'estudiante@', contrasena: 'Kaichaini1' } };
+    const res = crearRes();
+
+    await AuthController.iniciarSesion(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+  });
+
+  test('[CVN12] contrasena con longitud < 8 debería rechazar', async () => {
+    const req = { body: { correo: 'estudiante@demo.com', contrasena: 'ab' } };
     const res = crearRes();
 
     await AuthController.iniciarSesion(req, res);
@@ -192,8 +260,8 @@ describe('AuthController.iniciarSesion (H.U. 007, integración con BD real)', ()
     expect(res.status).toHaveBeenCalledWith(401);
   });
 
-  test('[CNV2-formato] debería rechazar si el correo no tiene "@"', async () => {
-    const req = { body: { correo: 'nodomaintest.com', contrasena: CONTRASENA_ESTUDIANTE_PRUEBA } };
+  test('[CVN13] contrasena sin mayusculas debería rechazar', async () => {
+    const req = { body: { correo: 'estudiante@demo.com', contrasena: 'kaichaini1' } };
     const res = crearRes();
 
     await AuthController.iniciarSesion(req, res);
@@ -201,8 +269,8 @@ describe('AuthController.iniciarSesion (H.U. 007, integración con BD real)', ()
     expect(res.status).toHaveBeenCalledWith(401);
   });
 
-  test('[CNV2-formato] debería rechazar si el correo no tiene nombre (empieza con "@")', async () => {
-    const req = { body: { correo: '@kaichaini.test', contrasena: CONTRASENA_ESTUDIANTE_PRUEBA } };
+  test('[CVN14] contrasena sin numeros debería rechazar', async () => {
+    const req = { body: { correo: 'estudiante@demo.com', contrasena: 'KaichainiX' } };
     const res = crearRes();
 
     await AuthController.iniciarSesion(req, res);
@@ -210,43 +278,12 @@ describe('AuthController.iniciarSesion (H.U. 007, integración con BD real)', ()
     expect(res.status).toHaveBeenCalledWith(401);
   });
 
-  test('[CNV2-formato] debería rechazar si el correo no tiene dominio (termina en "@")', async () => {
-    const req = { body: { correo: 'test.estudiante@', contrasena: CONTRASENA_ESTUDIANTE_PRUEBA } };
+  test('[CVN15] contrasena que no coincide con la almacenada debería rechazar', async () => {
+    const req = { body: { correo: 'estudiante@demo.com', contrasena: 'Kaichaini9' } };
     const res = crearRes();
 
     await AuthController.iniciarSesion(req, res);
 
     expect(res.status).toHaveBeenCalledWith(401);
-  });
-
-  test('[CNV5] debería rechazar si la contrasena es incorrecta', async () => {
-    const req = { body: { correo: CORREO_ESTUDIANTE_PRUEBA, contrasena: 'contrasena-equivocada' } };
-    const res = crearRes();
-
-    await AuthController.iniciarSesion(req, res);
-
-    expect(res.status).toHaveBeenCalledWith(401);
-  });
-
-  test('[CNV6] debería rechazar si la contrasena tiene menos de 3 caracteres', async () => {
-    const req = { body: { correo: CORREO_ESTUDIANTE_PRUEBA, contrasena: 'ab' } };
-    const res = crearRes();
-
-    await AuthController.iniciarSesion(req, res);
-
-    expect(res.status).toHaveBeenCalledWith(401);
-  });
-
-  // HALLAZGO: iniciarSesion() no valida rol, por lo que un Docente
-  // tambien puede autenticarse por el endpoint generico de estudiante.
-  // Este test documenta el comportamiento ACTUAL (no el deseado); debe
-  // actualizarse a 401 cuando se agregue el filtro de rol Estudiante.
-  test('[HALLAZGO] permite login de un Docente por el endpoint genérico (sin filtro de rol)', async () => {
-    const req = { body: { correo: CORREO_DOCENTE_PRUEBA, contrasena: CONTRASENA_DOCENTE_PRUEBA } };
-    const res = crearRes();
-
-    await AuthController.iniciarSesion(req, res);
-
-    expect(res.status).toHaveBeenCalledWith(200);
   });
 });

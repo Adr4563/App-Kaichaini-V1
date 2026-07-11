@@ -5,6 +5,7 @@ const Docente = require('../models/Docente');
 const Liga = require('../models/Liga');
 
 const RESET_TOKEN_VIGENCIA_MS = 60 * 60 * 1000; // 1 hora
+const CORREO_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 class AuthController {
 
@@ -55,6 +56,10 @@ class AuthController {
         return res.status(400).json({ success: false, message: 'Correo y contrasena son requeridos' });
       }
 
+      if (!CORREO_REGEX.test(correo)) {
+        return res.status(400).json({ success: false, message: 'Formato de correo invalido' });
+      }
+
       const usuario = await User.obtenerPorCorreo(correo);
 
       if (!usuario) {
@@ -79,6 +84,10 @@ class AuthController {
 
       if (!correo || !contrasena) {
         return res.status(400).json({ success: false, message: 'Correo y contrasena son requeridos' });
+      }
+
+      if (!CORREO_REGEX.test(correo)) {
+        return res.status(400).json({ success: false, message: 'Formato de correo invalido' });
       }
 
       const usuario = await User.obtenerPorCorreo(correo);
