@@ -14,22 +14,27 @@ export default function MisClasesDocenteScreen({ navigation }) {
   const { usuario, logout } = useAuth();
   const [clases,     setClases]     = useState([]);
   const [cargando,   setCargando]   = useState(true);
+  const [errorCarga, setErrorCarga] = useState(false);
   const [showLogout, setShowLogout] = useState(false);
 
-  const cargarClases = async () => {
+  const cargarClases = useCallback(async () => {
+    setCargando(true);
+    setErrorCarga(false);
     try {
-      const { data } = await api.get('/clases/mis-clases', { params: { idUsuario: usuario.id, rol: usuario.rol } });
+      const { data } = await api.get('/clases/mis-clases', { params: { idUsuario: usuario?.id, rol: usuario?.rol } });
       setClases(data.data || []);
     } catch (_) {
       setClases([]);
+      setErrorCarga(true);
+    } finally {
+      setCargando(false);
     }
-  };
+  }, [usuario?.id, usuario?.rol]);
 
   useFocusEffect(
     useCallback(() => {
-      setCargando(true);
-      cargarClases().finally(() => setCargando(false));
-    }, []),
+      cargarClases();
+    }, [cargarClases]),
   );
 
   if (cargando) {
@@ -58,7 +63,20 @@ export default function MisClasesDocenteScreen({ navigation }) {
 
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 40 }}>
 
-        {clases.length === 0 ? (
+        {errorCarga ? (
+          <View style={{ alignItems: 'center', paddingVertical: 50 }}>
+            <Feather name="alert-circle" size={48} color="#d1d5db" style={{ marginBottom: 14 }} />
+            <Text style={{ fontSize: 16, fontWeight: '700', color: '#1a1a1a', marginBottom: 14 }}>
+              No pudimos cargar tus clases
+            </Text>
+            <TouchableOpacity
+              onPress={cargarClases}
+              style={{ backgroundColor: '#1a1a1a', borderRadius: 8, paddingHorizontal: 18, paddingVertical: 10 }}
+            >
+              <Text style={{ fontSize: 14, fontWeight: '700', color: '#fff' }}>Reintentar</Text>
+            </TouchableOpacity>
+          </View>
+        ) : clases.length === 0 ? (
           <View style={{ alignItems: 'center', paddingVertical: 50 }}>
             <Feather name="folder" size={48} color="#d1d5db" style={{ marginBottom: 14 }} />
             <Text style={{ fontSize: 16, fontWeight: '700', color: '#1a1a1a', marginBottom: 6 }}>
@@ -94,7 +112,7 @@ export default function MisClasesDocenteScreen({ navigation }) {
                   {clase.curso} · Código {clase.codigoUnico}
                 </Text>
                 <Text style={{ fontSize: 12, color: '#666' }}>
-                  {clase.numEstudiantes} estudiante{clase.numEstudiantes === '1' ? '' : 's'} inscrito{clase.numEstudiantes === '1' ? '' : 's'}
+                  {clase.numEstudiantes} estudiante{clase.numEstudiantes === 1 ? '' : 's'} inscrito{clase.numEstudiantes === 1 ? '' : 's'}
                 </Text>
               </View>
 

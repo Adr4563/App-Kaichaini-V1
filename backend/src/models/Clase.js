@@ -23,7 +23,7 @@ class Clase {
   static async listarPorDocente(idDocente) {
     const { rows } = await pool.query(
       `SELECT c.id, c.nombre, c."codigoUnico", c.curso, c."idDocente",
-              COUNT(ec."idEstudiante") AS "numEstudiantes"
+              COUNT(ec."idEstudiante")::INTEGER AS "numEstudiantes"
        FROM CLASE c
        LEFT JOIN ESTUDIANTE_CLASE ec ON ec."idClase" = c.id
        WHERE c."idDocente" = $1
