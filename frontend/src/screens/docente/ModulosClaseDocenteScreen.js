@@ -11,6 +11,12 @@ import { useFocusEffect } from '@react-navigation/native';
 import api from '../../services/api';
 
 const BIMESTRES = ['I', 'II', 'III', 'IV'];
+const BIMESTRE_A_NUMERO = {
+  I: 1,
+  II: 2,
+  III: 3,
+  IV: 4,
+};
 
 export default function ModulosClaseDocenteScreen({ route, navigation }) {
   const { idClase, nombreClase } = route.params || {};
@@ -39,7 +45,7 @@ export default function ModulosClaseDocenteScreen({ route, navigation }) {
   const modulosPorBimestre = BIMESTRES.map(b => ({
     bimestre: b,
     items: modulos
-      .filter(m => m.bimestre === b)
+      .filter(m => Number(m.bimestre) === BIMESTRE_A_NUMERO[b])
       .sort((a, c) => a.orden - c.orden),
   }));
 
