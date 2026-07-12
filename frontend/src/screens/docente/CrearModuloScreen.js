@@ -1,26 +1,102 @@
 // CrearModuloScreen.js
-// H.U. 405 - Creación de módulo por parte del docente (solo UI)
+// H.U. 405 - Creación de módulo por parte del docente
 
 import React, { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView,
+  ActivityIndicator,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import api from '../../services/api';
 
 const BIMESTRES = ['I', 'II', 'III', 'IV'];
+const BIMESTRE_A_NUMERO = {
+  I: 1,
+  II: 2,
+  III: 3,
+  IV: 4,
+};
 
 export default function CrearModuloScreen({ route, navigation }) {
   const { idClase, nombreClase } = route.params || {};
 
-  const [nombre,   setNombre]   = useState('');
+  const [nombre, setNombre] = useState('');
   const [bimestre, setBimestre] = useState(null);
+  const [guardando, setGuardando] = useState(false);
+  const [error, setError] = useState(null);
 
-  const puedeCrear = nombre.trim().length > 0 && bimestre !== null;
+  const puedeCrear = nombre.trim().length > 0 && bimestre !== null && !guardando;
 
-  const handleCrear = () => {
-    // TODO: Conectar con backend — POST /modulos { idClase, nombre, bimestre }
-    // El orden se asigna automáticamente en el backend.
-    console.log('Crear módulo', { idClase, nombre, bimestre });
+  const handleCrear = async () => {
+    console.log('[CrearModulo] handleCrear iniciado', {
+      idClase,
+      nombre,
+      bimestre,
+      guardando,
+    });
+
+    if (!idClase || !nombre.trim() || !bimestre || guardando) {
+      console.log('[CrearModulo] validación bloqueó el envío', {
+        idClase,
+        nombreValido: nombre.trim().length > 0,
+        bimestre,
+        guardando,
+      });
+      return;
+    }
+
+    setError(null);
+    setGuardando(true);
+    console.log('[CrearModulo] estado guardando activado');
+
+    try {
+      const bimestreNumero = BIMESTRE_A_NUMERO[bimestre];
+
+      // El backend no autoasigna el orden: se calcula aquí como
+      // (cantidad de módulos ya existentes en ese bimestre) + 1.
+      console.log('[CrearModulo] consultando módulos existentes', { idClase });
+      const { data: existentes } = await api.get('/modulos', { params: { idClase } });
+      console.log('[CrearModulo] respuesta GET /modulos', existentes);
+
+      const modulosBimestre = (existentes.data || []).filter(
+        m => Number(m.bimestre) === bimestreNumero
+      );
+      const orden = modulosBimestre.length + 1;
+      console.log('[CrearModulo] cálculo de orden', {
+        totalModulos: (existentes.data || []).length,
+        modulosBimestre: modulosBimestre.length,
+        orden,
+        bimestre,
+        bimestreNumero,
+      });
+
+      console.log('[CrearModulo] enviando POST /modulos/:idClase', {
+        idClase,
+        nombre: nombre.trim(),
+        bimestre: bimestreNumero,
+        orden,
+      });
+
+      await api.post(`/modulos/${idClase}`, {
+        nombre: nombre.trim(),
+        bimestre: bimestreNumero,
+        orden,
+      });
+
+      console.log('[CrearModulo] módulo creado correctamente');
+
+      navigation.goBack();
+    } catch (error) {
+      console.error('[CrearModulo] error al crear el módulo', {
+        message: error?.message,
+        responseStatus: error?.response?.status,
+        responseData: error?.response?.data,
+      });
+      setError('No se pudo crear el módulo. Intenta nuevamente.');
+    } finally {
+      setGuardando(false);
+      console.log('[CrearModulo] estado guardando desactivado');
+    }
   };
 
   return (
@@ -74,14 +150,23 @@ export default function CrearModuloScreen({ route, navigation }) {
           </Text>
         </View>
 
+        {/* Mensaje de error */}
+        {error && <Text style={s.errorText}>{error}</Text>}
+
         {/* Botón crear */}
         <TouchableOpacity
           style={[s.crearBtn, !puedeCrear && s.crearBtnDisabled]}
           onPress={handleCrear}
           disabled={!puedeCrear}
         >
-          <Feather name="plus-circle" size={18} color="#fff" />
-          <Text style={s.crearBtnText}>Crear módulo</Text>
+          {guardando ? (
+            <ActivityIndicator size="small" color="#fff" />
+          ) : (
+            <>
+              <Feather name="plus-circle" size={18} color="#fff" />
+              <Text style={s.crearBtnText}>Crear módulo</Text>
+            </>
+          )}
         </TouchableOpacity>
 
       </ScrollView>
@@ -125,6 +210,7 @@ const s = StyleSheet.create({
     padding: 14, marginTop: 24,
   },
   infoText: { flex: 1, fontSize: 13, color: '#6b7280', lineHeight: 19 },
+  errorText: { marginTop: 14, fontSize: 13, color: '#b91c1c', fontWeight: '600' },
 
   crearBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
