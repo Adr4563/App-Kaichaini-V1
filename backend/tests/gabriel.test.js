@@ -11,8 +11,10 @@
 //     borra ESA fila. Un afterAll limpia cualquier sobrante de prueba.
 //
 // Clases de equivalencia cubiertas (ver Tabla 10.3.x del documento):
-//   HU417: CV1, CV2, CVN1 (obligatorio), CVN2 (formato)
-//   HU407: CV1, CVN1 (inexistente), CVN2 (formato)
+//   HU417: CV1, CV2, CVN1 (obligatorio), CVN2 (formato → 400)
+//   HU407: CV1, CVN1 (inexistente), CVN2 (formato → 400)
+//
+// La validación de formato UUID (CVN2 → 400) corrige los defectos DEF-01 y DEF-02.
 
 const MaterialController = require('../src/controllers/materialController');
 const pool = require('../src/config/database');
@@ -90,13 +92,24 @@ describe('HU417 - MaterialController.listarPorClaseYModulo (integración con BD 
     expect(res.json).toHaveBeenCalledWith({ success: false, message: 'ID de clase o modulo es requerido' });
   });
 
-  test('[CVN2-formato] idClase con formato no-UUID retorna 500 (comportamiento actual — DEF-01)', async () => {
+  test('[CVN2-formato] idClase con formato no-UUID debería rechazar con 400 (corrige DEF-01)', async () => {
     const req = { query: { idClase: ID_MAL_FORMADO } };
     const res = crearRes();
 
     await MaterialController.listarPorClaseYModulo(req, res);
 
-    expect(res.status).toHaveBeenCalledWith(500);
+    expect(res.status).toHaveBeenCalledWith(400);
+    const body = res.json.mock.calls[0][0];
+    expect(body.success).toBe(false);
+  });
+
+  test('[CVN3-formato] idModulo con formato no-UUID debería rechazar con 400', async () => {
+    const req = { query: { idModulo: ID_MAL_FORMADO } };
+    const res = crearRes();
+
+    await MaterialController.listarPorClaseYModulo(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(400);
     const body = res.json.mock.calls[0][0];
     expect(body.success).toBe(false);
   });
@@ -129,13 +142,13 @@ describe('HU407 - MaterialController.eliminar (integración con BD real)', () =>
     expect(res.json).toHaveBeenCalledWith({ success: false, message: 'Material no encontrado' });
   });
 
-  test('[CVN2-formato] id con formato no-UUID retorna 500 (comportamiento actual — DEF-02)', async () => {
+  test('[CVN2-formato] id con formato no-UUID debería rechazar con 400 (corrige DEF-02)', async () => {
     const req = { params: { id: ID_MAL_FORMADO } };
     const res = crearRes();
 
     await MaterialController.eliminar(req, res);
 
-    expect(res.status).toHaveBeenCalledWith(500);
+    expect(res.status).toHaveBeenCalledWith(400);
     const body = res.json.mock.calls[0][0];
     expect(body.success).toBe(false);
   });

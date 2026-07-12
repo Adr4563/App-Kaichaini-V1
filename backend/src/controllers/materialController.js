@@ -1,6 +1,6 @@
 const Material = require('../models/Material');
 const pool = require('../config/database');
-const { v4: uuidv4 } = require('uuid');
+const { v4: uuidv4, validate: esUUID } = require('uuid');
 
 class MaterialController {
 
@@ -10,6 +10,14 @@ class MaterialController {
 
       if (!idClase && !idModulo) {
         return res.status(400).json({ success: false, message: 'ID de clase o modulo es requerido' });
+      }
+
+      if (idClase && !esUUID(idClase)) {
+        return res.status(400).json({ success: false, message: 'El id de clase no tiene un formato valido' });
+      }
+
+      if (idModulo && !esUUID(idModulo)) {
+        return res.status(400).json({ success: false, message: 'El id de modulo no tiene un formato valido' });
       }
 
       let material;
@@ -63,6 +71,10 @@ class MaterialController {
   static async eliminar(req, res) {
     try {
       const { id } = req.params;
+
+      if (!esUUID(id)) {
+        return res.status(400).json({ success: false, message: 'El id de material no tiene un formato valido' });
+      }
 
       const resultado = await pool.query('DELETE FROM MATERIAL WHERE id = $1 RETURNING *', [id]);
 
