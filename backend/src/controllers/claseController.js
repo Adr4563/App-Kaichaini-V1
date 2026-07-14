@@ -82,8 +82,10 @@ class ClaseController {
       let clases;
       if (rol === 'Docente') {
         clases = await Clase.listarPorDocente(idUsuario);
-      } else {
+      } else if (rol === 'Estudiante') {
         clases = await Clase.obtenerPorEstudiante(idUsuario);
+      } else {
+        return res.status(400).json({ success: false, message: 'Rol no valido' });
       }
 
       res.status(200).json({ success: true, data: clases });
